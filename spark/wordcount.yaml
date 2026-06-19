@@ -1,0 +1,24 @@
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: SparkApplication
+metadata:
+  name: spark-pi-demo
+  namespace: default
+spec:
+  type: Python
+  pythonVersion: "3"
+  mode: cluster
+  image: swr.cn-east-3.myhuaweicloud.com/keshe/pyspark:3.4
+  imagePullSecrets:
+  - default-secret          # ← 字符串列表，不是 - name: xxx
+  mainApplicationFile: local:///opt/spark/examples/src/main/python/pi.py
+  sparkVersion: "3.4.0"
+  restartPolicy:
+    type: Never
+  driver:
+    cores: 1
+    memory: "1g"
+    serviceAccount: spark
+  executor:
+    cores: 1
+    instances: 2
+    memory: "1g"

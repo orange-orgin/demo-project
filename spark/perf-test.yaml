@@ -1,0 +1,49 @@
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: SparkApplication
+metadata:
+  name: perf-test-analysis
+  namespace: default
+spec:
+  type: Python
+  pythonVersion: "3"
+  mode: cluster
+  image: swr.cn-east-3.myhuaweicloud.com/keshe/pyspark-perf:3.4
+  imagePullSecrets:
+  - default-secret
+  imagePullPolicy: Always
+  mainApplicationFile: local:///opt/spark/work/perf_test.py
+  sparkVersion: "3.4.0"
+  restartPolicy:
+    type: Never
+
+  # ★ 让 executor 内存总需求 < 节点剩余，避免被 K8s 踢
+  sparkConf:
+    spark.executor.memoryOverheadFactor: "0.15"
+    spark.kubernetes.memoryOverheadFactor: "0.15"
+
+  volumes:
+  - name: script-volume
+    configMap:
+      name: perf-test-py
+      items:
+      - key: perf_test.py
+        path: perf_test.py
+
+  driver:
+    cores: 1
+    memory: "1536m"
+    serviceAccount: spark
+    volumeMounts:
+    - name: script-volume
+      mountPath: /opt/spark/work/perf_test.py
+      subPath: perf_test.py
+
+  executor:
+    cores: 1
+    # 总 Pod limit ≈ memory + overhead(15%) ≈ 1400+210=1610Mi
+    memory: "1400m"
+    instances: 1
+    volumeMounts:
+    - name: script-volume
+      mountPath: /opt/spark/work/perf_test.py
+      subPath: perf_test.py

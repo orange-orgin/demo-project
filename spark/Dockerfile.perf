@@ -1,0 +1,15 @@
+FROM swr.cn-east-3.myhuaweicloud.com/keshe/pyspark:3.4
+
+# 切 root 才有写 site-packages 权限（之前 pandas pip install 报 Permission denied 的解法）
+USER 0
+RUN pip install --no-cache-dir pandas numpy
+USER 185
+
+WORKDIR /opt/spark/work
+
+# ✅ 单文件 COPY → 目标可以是文件或目录（推荐写目录形式）
+COPY analysis.py /opt/spark/work/analysis.py
+# ✅ 如果要多文件/通配符，目标必须带结尾 /
+# COPY *.py /opt/spark/work/
+
+CMD ["python","--version"]

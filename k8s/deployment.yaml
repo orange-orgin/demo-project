@@ -1,0 +1,81 @@
+# ---- Backend Flask Deployment ----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: default
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      imagePullSecrets:
+      - name: default-secret   # CCE拉SWR私有镜像必需
+      containers:
+      - name: backend
+        image: swr.cn-east-3.myhuaweicloud.com/keshe/backend:v1
+        ports:
+        - containerPort: 5000
+        resources:
+          requests:
+            cpu: "50m"        # ↓ 原100m
+            memory: "32Mi"    # ↓ 原128Mi
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        envFrom:
+        - configMapRef:
+            name: backend-config
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: redis-secret
+              key: password
+        livenessProbe:
+          httpGet:
+            path: /api/ping
+            port: 5000
+          initialDelaySeconds: 10
+          periodSeconds: 15
+---
+# ---- Redis Deployment ----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        # ★ 关键：开启AOF持久化，确保数据落盘到 /data
+        command:["redis-server", "--appendonly", "yes", "--save", "900 1",        ports:
+        - containerPort: 6379
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+          limits:
+            memory: "512Mi"
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+      volumes:
+      - name: redis-data
+        persistentVolumeClaim:
+          claimName: redis-data-pvc

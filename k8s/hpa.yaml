@@ -1,0 +1,22 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: backend-hpa
+  namespace: default
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: backend          # ← 对应你 backend Deployment 的名字
+  minReplicas: 1
+  maxReplicas: 4
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 60   # CPU requests 的 60%
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300   # 缩容冷却 5min（课设要求观察缩容）

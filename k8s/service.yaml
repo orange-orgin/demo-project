@@ -1,0 +1,30 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-svc
+  namespace: default
+  annotations:
+    kubernetes.io/elb.class: union
+    # 让CCE自动创建公网共享型ELB并绑定EIP（带宽5M，按需调整）
+    kubernetes.io/elb.autocreate: '{"type":"public","bandwidth_name":"cce-bandwidth-keshe","bandwidth_chargemode":"bandwidth","bandwidth_size":5,"bandwidth_sharetype":"PER","eip_type":"5_bgp"}'
+spec:
+  type: LoadBalancer
+  selector:
+    app: backend
+  ports:
+  - port: 80
+    targetPort: 5000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-svc
+  namespace: default
+spec:
+  type: ClusterIP
+  selector:
+    app: redis
+  ports:
+  - port: 6379
+    targetPort: 6379

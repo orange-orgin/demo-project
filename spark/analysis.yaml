@@ -1,0 +1,40 @@
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: SparkApplication
+metadata:
+  name: movie-analysis
+  namespace: default
+spec:
+  type: Python
+  pythonVersion: "3"
+  mode: cluster
+  image: swr.cn-east-3.myhuaweicloud.com/keshe/pyspark:3.4
+  imagePullSecrets:
+  - default-secret
+  mainApplicationFile: local:///opt/spark/work/analysis.py
+  sparkVersion: "3.4.0"
+  restartPolicy:
+    type: Never
+
+  # ★ 挂 ConfigMap 作 volume
+  volumes:
+  - name: scripts
+    configMap:
+      name: movie-analysis-py
+      items:
+      - key: analysis.py
+        path: analysis.py
+
+  driver:
+    cores: 1
+    memory: "2g"
+    serviceAccount: spark
+    volumeMounts:
+    - name: scripts
+      mountPath: /opt/spark/work/analysis.py
+      subPath: analysis.py
+
+  executor:
+    cores: 1
+    instances: 2
+    memory: "2g"
+    # executor 不需要 analysis.py（driver 分发 task），若你后面跑独立 exec py 再加
